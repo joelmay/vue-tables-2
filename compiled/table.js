@@ -1,14 +1,20 @@
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports["default"] = _default;
 
-exports.default = function () {
-  return { methods: methods, computed: computed, directives: directives, beforeDestroy: beforeDestroy };
-};
+var methods = require("./mixins/methods");
 
-var methods = require('./mixins/methods');
-var computed = require('./mixins/computed');
-var directives = require('./mixins/directives');
-var beforeDestroy = require('./mixins/before-destroy');
+var computed = require("./mixins/computed");
+
+var beforeDestroy = require("./mixins/before-destroy");
+
+function _default() {
+  return {
+    methods: methods,
+    computed: computed,
+    beforeDestroy: beforeDestroy
+  };
+}

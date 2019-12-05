@@ -2,11 +2,13 @@
 
 module.exports = function () {
   return {
+    alwaysShowPerPageSelect: false,
+    hidePerPageSelect: false,
     dateColumns: [],
     listColumns: {},
     datepickerOptions: {
       locale: {
-        cancelLabel: 'Clear'
+        cancelLabel: "Clear"
       }
     },
     datepickerPerColumnOptions: {},
@@ -22,6 +24,7 @@ module.exports = function () {
     filterable: true,
     groupMeta: [],
     initFilters: {},
+    sendInitialRequest: true,
     customFilters: [],
     templates: {},
     debounce: 250,
@@ -33,28 +36,28 @@ module.exports = function () {
     columnsDropdown: false,
     texts: {
       count: "Showing {from} to {to} of {count} records|{count} records|One record",
-      first: 'First',
-      last: 'Last',
+      first: "First",
+      last: "Last",
       filter: "Filter:",
       filterPlaceholder: "Search query",
       limit: "Records:",
       page: "Page:",
       noResults: "No matching records",
       filterBy: "Filter by {column}",
-      loading: 'Loading...',
-      defaultOption: 'Select {column}',
-      columns: 'Columns'
+      loading: "Loading...",
+      defaultOption: "Select {column}",
+      columns: "Columns"
     },
     sortIcon: {
-      is: 'glyphicon-sort',
-      base: 'glyphicon',
-      up: 'glyphicon-chevron-up',
-      down: 'glyphicon-chevron-down'
+      is: "glyphicon-sort",
+      base: "glyphicon",
+      up: "glyphicon-chevron-up",
+      down: "glyphicon-chevron-down"
     },
     sortingAlgorithm: function sortingAlgorithm(data, column) {
       return data.sort(this.getSortFn(column));
     },
-
+    filterAlgorithm: {},
     customSorting: {},
     multiSorting: {},
     clientMultiSorting: true,
@@ -70,37 +73,43 @@ module.exports = function () {
       dropdown: false,
       chunk: 10,
       edge: false,
-      align: 'center',
-      nav: 'fixed'
+      align: "center",
+      nav: "fixed"
     },
     childRow: false,
     childRowTogglerFirst: true,
-    uniqueKey: 'id',
+    showChildRowToggler: true,
+    uniqueKey: "id",
     requestFunction: false,
     requestAdapter: function requestAdapter(data) {
       return data;
     },
     responseAdapter: function responseAdapter(resp) {
-
       var data = this.getResponseData(resp);
-
       return {
         data: data.data,
         count: data.count
       };
     },
     requestKeys: {
-      query: 'query',
-      limit: 'limit',
-      orderBy: 'orderBy',
-      ascending: 'ascending',
-      page: 'page',
-      byColumn: 'byColumn'
+      query: "query",
+      limit: "limit",
+      orderBy: "orderBy",
+      ascending: "ascending",
+      page: "page",
+      byColumn: "byColumn"
     },
     rowClassCallback: false,
     preserveState: false,
     saveState: false,
-    storage: 'local',
-    columnsClasses: {}
+    storage: "local",
+    columnsClasses: {},
+    summary: false,
+    caption: false,
+    cellClasses: {},
+    visibleColumns: false,
+    hiddenColumns: false,
+    resizableColumns: true,
+    editableColumns: []
   };
 };

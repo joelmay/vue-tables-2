@@ -1,9 +1,18 @@
 # Vue Tables 2
 
-[![npm version](https://badge.fury.io/js/vue-tables-2.svg)](https://badge.fury.io/js/vue-tables-2) [![GitHub stars](https://img.shields.io/github/stars/matfish2/vue-tables-2.svg)](https://github.com/matfish2/vue-tables-2/stargazers) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/matfish2/vue-tables-2/master/LICENSE) [![npm](https://img.shields.io/npm/dt/vue-tables-2.svg)](https://www.npmjs.com/package/vue-tables-2) [![Build Status](https://travis-ci.org/matfish2/vue-tables-2.svg?branch=master)](https://travis-ci.org/matfish2/vue-tables-2) [![](https://data.jsdelivr.com/v1/package/npm/vue-tables-2/badge)](https://www.jsdelivr.com/package/npm/vue-tables-2) [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/vue-tables-2/Lobby)
+[![npm version](https://badge.fury.io/js/vue-tables-2.svg)](https://badge.fury.io/js/vue-tables-2) [![GitHub stars](https://img.shields.io/github/stars/matfish2/vue-tables-2.svg)](https://github.com/matfish2/vue-tables-2/stargazers) [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/matfish2/vue-tables-2/master/LICENSE) [![npm](https://img.shields.io/npm/dt/vue-tables-2.svg)](https://www.npmjs.com/package/vue-tables-2) [![Build Status](https://travis-ci.org/matfish2/vue-tables-2.svg?branch=master)](https://travis-ci.org/matfish2/vue-tables-2) [![](https://data.jsdelivr.com/v1/package/npm/vue-tables-2/badge)](https://www.jsdelivr.com/package/npm/vue-tables-2) [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/vue-tables-2/Lobby)
+
+Important Note: As of version 1.6.0 the license for the package has changed from MIT to GPLv3. 
+Users of previous versions can of course keep using the package under MIT license.
+If you require an MIT license for commercial use you can purchase it [here](https://cp.xscode.com/repositories/13).
+In addition to the permissive license, subscribed users will receive ongoing priority support for any issue that might arise.
 
 [Click here](https://jsfiddle.net/matfish2/jfa5t4sm/) to see the client component in action and fiddle with the various [options](#options)
 or [here](https://jsfiddle.net/matfish2/js4bmdbL/) for a rudimentary server component demo
+
+
+**Recently Added: Resizable Columns, Editable Cells, Hidden Columns, Improved Accessibility, and more**
+
 
 - [Usage](#usage)
 - [Dependencies](#dependencies)
@@ -17,16 +26,19 @@ or [here](https://jsfiddle.net/matfish2/js4bmdbL/) for a rudimentary server comp
   - [Scoped Slots](#scoped-slots)
   - [Virtual DOM Functions](#virtual-dom-functions)
   - [Vue Components](#vue-components)
+- [Editable Cells](#editable-cells)
 - [Child Rows](#child-rows)
 - [Methods](#methods)
 - [Properties](#properties)
 - [Events](#events)
 - [Date Columns](#date-columns)
+- [Filters Algorithm](#filters-algorithm)
 - [Custom Filters](#custom-filters)
 - [Client Side Filters](#client-side-filters)
 - [Server Side Filters](#server-side-filters)
 - [List Filters](#list-filters)
 - [Columns Visibility](#columns-visibility)
+- [Cells Conditional Styling](#cells-conditional-styling)
 - [Custom Sorting](#custom-sorting)
 - [Client Side Sorting](#client-side-sorting)
 - [Server Side Sorting](#server-side-sorting)
@@ -328,7 +340,7 @@ app.vue
 ```
 
 ## Vue Components
-Another option to for creating templates is to encapsulate the template within a component and pass the name. The component must have a `data` property, which will receive the row object. You can also add an optional `index` prop, to get the non-zero-based index of the current row relative to the entire dataset, and an optional `column` prop to get the current column. E.g:
+Another option for creating templates is to encapsulate the template within a component and pass the name. The component must have a `data` property, which will receive the row object. You can also add an optional `index` prop, to get the non-zero-based index of the current row relative to the entire dataset, and an optional `column` prop to get the current column. E.g:
 
 ```js
 Vue.component('delete', {
@@ -381,19 +393,59 @@ app.vue
 ```
 
 **Important**:
-* To use components in your templates they must be declared **globally** using `Vue.component()`.
 * Templates must be declared in the `columns` prop
+* Don't include HTML directly in your dataset, as it will be parsed as plain text.
 
-> Note: Don't include HTML directly in your dataset, as it will be parsed as plain text.
+# Editable Cells 
+
+Editable cells are currently supported only for the client table.
+To ensure editable data is reflected on your original dataset you must use `v-model` instead of the `data` prop.
+Each row in dataset must have a unique identifier. By default its key is set to `id`. Use the `uniqueKey` option if your dataset has a different identifier.
+
+As always examples work best to illustrate the syntax:
+
+Start by declaring the column(s) you wish to be editable using the `editableColumns` option:
+
+```js
+{
+   editableColumns:['text','text2','checkbox']
+}
+````
+
+Then use scoped slots to build the logic:
+
+```vue
+ <v-client-table :columns="client.columns" :options="client.options" v-model="client.data">
+    // update text on the fly
+    <input type="text" slot="text" slot-scope="{row, update}" v-model="row.text" @input="update">
+    // update a checkbox
+    <input type="checkbox" slot="checkbox" slot-scope="{row, update}" v-model="row.checkbox" @input="update">
+    
+    // update text on submit + toggle editable state + revert to original value on cancel
+    <div slot="text2" slot-scope="{row, update, setEditing, isEditing, revertValue}">
+     <span @click="setEditing(true)" v-if="!isEditing()">
+         {{row.text2}}
+     </span>
+        <span v-else>
+     <input type="text" v-model="row.text2">
+        <button type="button" @click="update(row.text2); setEditing(false)">Submit</button>
+   <button type="button" @click="revertValue(); setEditing(false)">Cancel</button>        
+</span>
+    </div>           
+</v-client-table>
+```
+
+In addition to the `input` event which is responsible - in conjunction with `v-model` - for updating the dataset, an additional `update` event is triggered with the following payload:
+```{row, column, oldVal, newVal}```
 
 # Child Rows
 
 Child rows allow for a custom designed output area, namely a hidden child row underneath each row, whose content you are free to set yourself.
 
 When using the `childRow` option you must pass a unqiue `id` property for each row, which is used to track the current state.
-If your identifer key is not `id`, use the `uniqueKey` option to set it.
+If your identifier key is not `id`, use the `uniqueKey` option to set it.
 
-The syntax is identincal to that of templates:
+The syntax is identical to that of templates:
 
 Using Scoped Slots:
 
@@ -454,6 +506,8 @@ You can also trigger the child row toggler programmtically. E.g, to toggle the r
 this.$refs.myTable.toggleChildRow(4); // replace myTable with your own ref
 ```
 
+Alternatively, you can use the `showChildRowToggler` option to prevent the child row toggler cells from being rendered. (See [options](#options))
+
 # Methods
 
 Call methods on your instance using the [`ref`](http://vuejs.org/api/#ref) attribute.
@@ -462,6 +516,7 @@ Call methods on your instance using the [`ref`](http://vuejs.org/api/#ref) attri
 * `setLimit(recordsPerPage)`
 * `setOrder(column, isAscending)`
 * `setFilter(query)` - `query` should be a string, or an object if `filterByColumn` is set to `true`.
+* `resetQuery()` - Resets all query inputs (user-request filters) to empty strings.
 * `getData()` Get table data using the existing request parameters. Server component only.
 * `refresh()` Refresh the table. This method is simply a wrapper for the `serverSearch` method, and thus resets the pagination. Server component only
 * `getOpenChildRows(rows = null)` 
@@ -571,6 +626,21 @@ On the server component the filter will be sent along with the request in the fo
 
 date presentation on the server component is completely up to you. If you are unable to control the server response, you can use the `templates` option to "massage" the date you get from the server into the desired format.
 
+# Filters Algorithm
+
+You can modify the default filtering algorithm per column using the `filterAlgorithm` option. 
+For "fake" template columns which are not backed up by a real corresponding property this is a necessity, if you wish the column to be included in the search (either in generic mode or by column).
+
+E.g, Say you have template column called `full_name` which combines first and last names; you can define the search algorithm like so:
+
+```js
+filterAlgorithm: {
+  full_name(row, query) {
+    return (row.first_name + ' ' + row.last_name).includes(query);
+  }
+}
+```
+
 # Custom Filters
 
 Custom filters allow you to integrate your own filters into the plugin using Vue's events system.
@@ -654,6 +724,22 @@ This will add a dropdown button to the left of the per-page control. The drop do
 
 The `columnsDropdown` option can work in conjunction with `columnsDisplay`. The rule is that as long as the user hasn't toggled a column himself, the rules you have declared in `columnsDisplay` takes precedence. Once the user toggled a column, he is in charge of columns' visibility, and the settings of `columnsDisplay` are disregarded. 
 
+# Cells Conditional Styling
+
+The `cellClasses` option allows you to conditionally add class(es) to the `td` element based on predefined conditions.
+For example, say you want to add a `low-balance` class to cells in a `balance` column that has a value of less than 100:
+
+```js
+cellClasses:{
+  balance: [
+    {
+        class:'low-balance',
+        condition: row => row.balance < 100
+    }
+  ]
+}
+```
+
 # Custom Sorting
 
 ## Client Side Sorting
@@ -724,10 +810,13 @@ Slots allow you to insert you own custom HTML in predefined positions within the
 * `afterTable`: Before the table wrapper. 
 * `beforeFilter`: Before the global filter (`filterByColumn: false`)
 * `afterFilter`: After the global filter
+* `afterFilterWrapper`: After the global filter wrapper
+* `beforeSearch`: Before the search control
 * `beforeLimit`: Before the per page control
 * `afterLimit`: After the per page control
 * `beforeFilters`: Before the filters row (`filterByColumn: true`)
 * `afterFilters`: After the filters row
+* `prependHead`: After the `<thead>` tag
 * `beforeBody`: Before the `<tbody>` tag
 * `afterBody`: After the `<tbody>` tag
 * `prependBody`: Prepend to the `<tbody>` tag
@@ -765,10 +854,12 @@ Options are set in three layers, where the more particular overrides the more ge
 
 Option | Type | Description | Default
 -------|------|-------------|--------
+caption | String | table `caption` element | `false`
 childRow | Function| [See documentation](#child-rows) | `false`
 childRowTogglerFirst | Boolean | Should the child row be positioned at the first column or the last one | `true`
 clientMultiSorting | Boolean | Enable multiple columns sorting using Shift + Click on the client component | `true`
 toggleGroups (client-side) | Boolean | When using the `groupBy` option, settings this to `true` will make group's visibility togglable, by turning the group name into a button | `false`
+cellClasses | Object | See [documentation](#cells-conditional-styling) | `{}`
 columnsClasses | Object | Add class(es) to the specified columns.<br> Takes key-value pairs, where the key is the column name and the value is a string of space-separated classes | `{}`
 columnsDisplay | Object | Responsive display for the specified columns.<br><br> Columns will only be shown when the window width is within the defined limits. <br><br>Accepts key-value pairs of column name and device.<br><br> Possible values are `mobile` (x < 480), `mobileP` (x < 320), `mobileL` (320 <= x < 480), `tablet` (480 <= x < 1024), `tabletP` (480 <= x < 768), `tabletL` (768 <= x < 1024), `desktop` (x >= 1024).<br><br> All options can be preceded by the logical operators min,max, and not followed by an underscore.<br><br>For example, a column which is set to `not_mobile` will be shown when the width of the window is greater than or equal to 480px, while a column set to `max_tabletP` will only be shown when the width is under 768px | `{}`
 columnsDropdown | Boolean | See [documentation](#columns-visibility) | `false`
@@ -782,9 +873,12 @@ datepickerPerColumnOptions | Object | additional options for specific columns, t
 debounce | Number | Number of idle milliseconds (no key stroke) to wait before sending a request. Used to detect when the user finished his query in order to avoid redundant requests (server) or rendering (client) | `500`
 descOrderColumns | Array | By default the initial sort direction is ascending. To override this for specific columns pass them into this option | `[]`
 destroyEventBus | Boolean | Should the plugin destroy the event bus before the table component is destroyed? Since the bus is shared by all instances, only set this to `true` if you have a single instance in your page | `false`
+editableColumns | Array | Columns that should be editable. See [documentation](#editable-cells) | `[]`
 filterable | Array / Boolean | Filterable columns `true` - All columns. | Set to `false` or `[]` to hide the filter(s). Single filter mode (`filterByColumn:false`) is also affected
+filterAlgorithm | Object | Define custom filtering logic per column. See [documentation](#filters-algorithm) | `{}`
 footerHeadings | Boolean | Display headings at the bottom of the table too | `false`
 headings | Object | Table headings. | Can be either a string or a function, if you wish to inject vue-compiled HTML.<br>E.g: `function(h) { return <h2>Title</h2>}`<br>Note that this example uses jsx, and not HTML.<br>The `this` context inside the function refers to the direct parent of the table instance.<br> Another option is to use a slot, named "h__{column}"<br>If no heading is provided the default rule is to extract it from the first row properties, where underscores become spaces and the first letter is capitalized
+hiddenColumns | Array / Boolean | An array of columns to hide initially (can then be added by user using `columnsDropdown` option). Mutually exclusive with `visibleColumns` | `false`
 groupBy (client-side) | String | Group rows by a common property. E.g, for a list of countries, group by the `continent` property | `false`
 groupMeta (client-side) | Array | Meta data associated with each group value. To be used in conjunction with `groupBy`. See documentation for a full example | `[]`
 headingsTooltips | Object | Table headings tooltips. | Can be either a string or a function, if you wish to inject vue-compiled HTML. Renders as `title` attribute of `<th>`. <br>E.g: `function(h) { return 'Expanded Title'}`<br>The `this` context inside the function refers to the direct parent of the table instance.
@@ -806,20 +900,26 @@ preserveState | Boolean | Preserve dynamically created vuex module when the tabl
 requestAdapter (server-side) | Function | Set a custom request format | `function(data) { return data; }`
 requestFunction (server-side) | Function | Set a custom request function | See documentation
 requestKeys (server-side) | Object | Set your own request keys | `{ query:'query', limit:'limit', orderBy:'orderBy', ascending:'ascending', page:'page', byColumn:'byColumn' }`
+resizableColumns | Boolean / Array | 3 options: a. `false` - no resizable columns b. `true` - all columns resizable c. array of resizable columns | `true`
 responseAdapter (server-side) | Function | Transform the server response to match the format expected by the client. This is especially useful when calling a foreign API, where you cannot control the response on the server-side | `function(resp) { var data = this.getResponseData(resp); return { data: data.data, count: data.count } }`
+rowAttributesCallback | Function | Add dynamic attributes to table rows.<br><br> E.g function(row) { return {id: row.id}} <br><br>This can be useful for manipulating the attributes of rows based on the data they contain | `{}`
 rowClassCallback | Function | Add dynamic classes to table rows.<br><br> E.g function(row) { return `row-${row.id}`} <br><br>This can be useful for manipulating the appearance of rows based on the data they contain | `false`
 saveState | Boolean | Constantly save table state and reload it each time the component mounts. When setting it to true, use the `name` prop to set an identifier for the table | `false`
 sendEmptyFilters (server-side) | Boolean | When filtering by column send all request keys, including empty ones | `false` 
+sendInitialRequest (server-side) | Boolean | Should a request to fetch the data be sent immediately when the table renders | `true`
 serverMultiSorting | Boolean | Enable multiple columns sorting using Shift + Click on the server component | `false`
+showChildRowToggler | Boolean | Enable render of `child row toggler` cell | `true`
 skin | String | Space separated table styling classes | `table-striped table-bordered table-hover`
 sortIcon | String | Sort icon classes | `{ base:'glyphicon', up:'glyphicon-chevron-up', down:'glyphicon-chevron-down', is:'glyphicon-sort' }`
 sortable | Array |  Sortable columns | All columns
 sortingAlgorithm | Function | define your own sorting algorithm  | `function (data, column) { return data.sort(this.getSortFn(column));}`
+summary | String | Table's `summary` attribute for accessibility reasons | `false` 
 storage | String | Which persistance mechanism should be used when saveState is set to true: `local` - localStorage. `session` - sessionStorage | `local`
 templates | Object | See [documentation](#templates) | {}
 texts | Object | see the `texts` object in [defaults.js](https://github.com/matfish2/vue-tables-2/blob/master/lib/config/defaults.js)</code>
 toMomentFormat (client-side) | String | transform date columns string values to momentjs objects using this format. If this option is not used the consumer is expected to pass momentjs objects himself | `false`
 uniqueKey | String | The key of a unique identifier in your dataset, used to track the child rows, and return the original row in row click event | `id`
+visibleColumns | Array / Boolean | An array of columns to show initially (can then be altered by user using `columnsDropdown` option). Mutually exclusive with `hiddenColumns` | `false`
 
 # VueJS 1
 

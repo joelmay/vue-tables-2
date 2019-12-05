@@ -6,7 +6,8 @@ module.exports = function () {
     allFilteredData: [],
     openChildRows: [],
     windowWidth: typeof window !== 'undefined' ? window.innerWidth : null,
-    userMultiSorting: {}
+    userMultiSorting: {},
+    editing: []
   };
 };
 
@@ -16,5 +17,7 @@ function makeId() {
 
   for (var i = 0; i < 5; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }return text;
+  }
+
+  return text;
 }
